@@ -4069,3 +4069,277 @@ select {
     animation: none;
   }
 }
+/* =========================================
+   STEP 10: MOBILE (Cart, Checkout, Shop, Wishlist, Search, Collections)
+========================================= */
+
+@media (max-width: 900px) {
+
+  /* Page side padding */
+  .cart-page,
+  .checkout-page,
+  .wishlist-page,
+  .search-page {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .cart-page {
+    padding-top: 45px;
+    padding-bottom: 60px;
+  }
+
+  .checkout-page {
+    padding-top: 45px;
+    padding-bottom: 60px;
+  }
+
+  .cart-heading h1,
+  .checkout-heading h1 {
+    font-size: 34px;
+  }
+
+  /* Cart and checkout: stack into one column */
+  .cart-layout,
+  .checkout-container {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .cart-summary,
+  .checkout-summary {
+    position: static;
+    padding: 26px 22px;
+  }
+
+  .checkout-form {
+    padding: 26px 20px;
+  }
+
+  .checkout-two-column {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* Shop toolbar: stack, and make categories scroll sideways */
+  .shop-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 20px;
+    gap: 14px;
+  }
+
+  .shop-categories {
+    overflow-x: auto;
+    gap: 20px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .shop-categories::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shop-category {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .shop-sort {
+    justify-content: space-between;
+  }
+
+  .shop-sort select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .shop-hero-content {
+    padding: 50px 22px;
+  }
+
+  .shop-hero h1 {
+    font-size: 38px;
+  }
+
+  /* Wishlist */
+  .wishlist-page h1 {
+    font-size: 34px;
+    margin-bottom: 28px;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    max-width: none;
+  }
+
+  /* Search */
+  .search-page {
+    padding-top: 60px;
+    padding-bottom: 60px;
+  }
+
+  .search-content h1 {
+    font-size: 36px;
+  }
+
+  /* Collections */
+  .collections-hero-content {
+    padding: 60px 22px;
+  }
+
+  .collections-hero-content h1 {
+    font-size: 40px;
+  }
+
+  .collections-section {
+    padding: 60px 20px;
+  }
+
+  .collections-heading h2 {
+    font-size: 30px;
+  }
+
+  .collections-grid {
+    grid-template-columns: 1fr;
+    gap: 50px;
+  }
+
+  .collection-image {
+    height: 440px;
+  }
+
+  .collection-story-content {
+    padding: 60px 22px;
+  }
+
+  .collection-story-content h2 {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 520px) {
+
+  /* Cart item: image beside details */
+  .cart-item {
+    flex-direction: row;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .cart-item img {
+    width: 110px;
+    height: 135px;
+    flex-shrink: 0;
+  }
+
+  .cart-item-info h3 {
+    font-size: 18px;
+  }
+
+  .cart-heading h1,
+  .checkout-heading h1 {
+    font-size: 30px;
+  }
+
+  /* Checkout form: bigger tap targets, 16px prevents iPhone zoom on focus */
+  .checkout-section-title h2 {
+    font-size: 20px;
+  }
+
+  .checkout-field input,
+  .checkout-field textarea,
+  .search-content input {
+    font-size: 16px;
+  }
+
+  .checkout-field input {
+    height: 48px;
+  }
+
+  .checkout-item-image img {
+    width: 65px;
+    height: 82px;
+  }
+
+  .checkout-total strong {
+    font-size: 19px;
+  }
+
+  /* Wishlist cards */
+  .wishlist-item {
+    padding: 10px;
+  }
+
+  .wishlist-info {
+    padding: 12px 2px 2px;
+  }
+
+  .wishlist-info h3 {
+    font-size: 16px;
+  }
+
+  .wishlist-cart-btn,
+  .remove-wishlist-btn {
+    font-size: 9px;
+    padding: 10px 6px;
+  }
+
+  /* Search results */
+  .search-page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .search-result img {
+    width: 64px;
+    height: 80px;
+  }
+
+  .search-result h3 {
+    font-size: 15px;
+  }
+
+  /* Order confirmation */
+  .order-confirmation {
+    padding: 50px 16px;
+  }
+
+  .confirmation-box {
+    width: 100%;
+    padding: 50px 24px;
+  }
+
+  .confirmation-box h1 {
+    font-size: 40px;
+  }
+
+  .collection-image {
+    height: 380px;
+  }
+}
+/* STEP 10 POLISH */
+
+/* No sticky hover underline on touch screens */
+@media (hover: none) {
+  .shop-category:not(.active):hover {
+    color: #6c625c;
+  }
+
+  .shop-category:not(.active):hover::after {
+    width: 0;
+  }
+}
+
+/* Taller mobile hero, text at the bottom so the saree shows */
+@media (max-width: 768px) {
+  .hero {
+    min-height: 560px;
+    justify-content: flex-end;
+  }
+
+  .hero-content {
+    padding: 40px 20px 60px;
+  }
+}
