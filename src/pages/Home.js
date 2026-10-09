@@ -1,5 +1,6 @@
 import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
+import shop from "../config";
 
 import heroSaree from "../assets/images/hero-saree.jpg";
 
@@ -11,8 +12,20 @@ import RecentlyViewed from "../components/RecentlyViewed";
 function Home() {
   const navigate = useNavigate();
 
+  const whatsappLink = `https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(
+    `Hello ${shop.name}, I would like to know more about your sarees.`
+  )}`;
+
   return (
     <>
+      {/* ANNOUNCEMENT BAR */}
+
+      <div className="announcement-bar">
+        <span>ORDER EASILY ON WHATSAPP</span>
+        <span className="announcement-dot">◆</span>
+        <span>VISIT OUR SHOWROOM IN {shop.city.toUpperCase()}</span>
+      </div>
+
       <Navbar />
 
       <main>
@@ -23,7 +36,7 @@ function Home() {
 
           <img
             src={heroSaree}
-            alt="Madanlal Sarees"
+            alt={shop.name}
             className="hero-bg"
           />
 
@@ -87,6 +100,50 @@ function Home() {
         {/* TRUST */}
 
         <TrustSection />
+
+        {/* VISIT SHOWROOM */}
+
+        <section className="home-visit">
+
+          <div className="home-visit-content">
+
+            <p>VISIT US</p>
+
+            <h2>Visit Our Showroom</h2>
+
+            <div className="home-visit-line"></div>
+
+            <span className="home-visit-name">
+              {shop.fullName}
+            </span>
+
+            <span className="home-visit-address">
+              {shop.addressLine1}, {shop.city}, {shop.state}
+            </span>
+
+            <div className="home-visit-buttons">
+
+              <button
+                className="home-visit-primary"
+                onClick={() => navigate("/contact")}
+              >
+                GET DIRECTIONS
+              </button>
+
+              <a
+                className="home-visit-secondary"
+                href={whatsappLink}
+                target="_blank"
+                rel="noreferrer"
+              >
+                CHAT ON WHATSAPP
+              </a>
+
+            </div>
+
+          </div>
+
+        </section>
 
       </main>
     </>

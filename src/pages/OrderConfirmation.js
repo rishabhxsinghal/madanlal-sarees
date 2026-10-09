@@ -1,35 +1,65 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function OrderConfirmation() {
   const navigate = useNavigate();
 
+  // Order saved by Checkout page
+  const [order] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("lastOrder"));
+    } catch {
+      return null;
+    }
+  });
+
+  const openWhatsApp = () => {
+    if (order?.whatsappURL) {
+      window.open(order.whatsappURL, "_blank");
+    }
+  };
+
   return (
     <div className="order-confirmation">
       <div className="confirmation-box">
+
         <div className="confirmation-icon">✓</div>
 
-        <p className="confirmation-small">
-          ORDER RECEIVED
-        </p>
+        <p className="confirmation-small">THANK YOU</p>
 
-        <h1>Thank You</h1>
+        <h1>Order Placed</h1>
+
+        {order?.orderId && (
+          <p className="confirmation-order-id">
+            ORDER ID: <strong>{order.orderId}</strong>
+          </p>
+        )}
 
         <p className="confirmation-message">
-          Thank you for shopping with Madanlal Sarees.
-          Your order details have been sent to us on WhatsApp.
+          Your order details have been prepared on WhatsApp.
+          Please send the message to complete your order.
         </p>
 
         <p className="confirmation-note">
-          Our team will contact you shortly to confirm your
-          order and delivery details.
+          We will confirm availability, delivery charges and
+          payment details with you on WhatsApp.
         </p>
 
-        <button
-          onClick={() => navigate("/shop")}
-        >
-          CONTINUE SHOPPING
-        </button>
+        <div className="confirmation-buttons">
+          {order?.whatsappURL && (
+            <button
+              className="confirmation-secondary-btn"
+              onClick={openWhatsApp}
+            >
+              OPEN WHATSAPP AGAIN
+            </button>
+          )}
+
+          <button onClick={() => navigate("/shop")}>
+            CONTINUE SHOPPING
+          </button>
+        </div>
+
       </div>
     </div>
   );

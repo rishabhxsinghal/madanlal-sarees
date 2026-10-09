@@ -1,134 +1,115 @@
-import React, { createContext, useContext, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState
+} from "react";
+import products from "../data/products";
 
 const CartContext = createContext();
 
+// Load cart and refresh every item from products.js
+function loadCart() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("cart")) || [];
+
+    return saved
+      .map((item) => {
+        const latest = products.find((p) => p.name === item.name);
+        if (!latest) return null;
+
+        return {
+          ...item,
+          image: latest.image,
+          price: latest.price,
+          fabric: latest.fabric,
+          occasion: latest.occasion,
+          stock: latest.stock,
+          quantity: Math.min(item.quantity, latest.stock)
+        };
+      })
+      .filter((item) => item && item.quantity > 0);
+  } catch {
+    return [];
+  }
+}
+
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem("cart");
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const [cart, setCart] = useState(loadCart);
 
-  const addToCart = (product) => {
-    setCart((currentCart) => {
-      const existingItem = currentCart.find(
-        (item) => item.name === product.name
-      );
+  // Save cart whenever it changes
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
 
-      if (existingItem) {
-        if (
-          product.stock !== undefined &&
-          existingItem.quantity >= product.stock
-        ) {
-          alert(`Only ${product.stock} available in stock.`);
-          return currentCart;
-        }
+  // qty = how many to add (default 1)
+  const addToCart = (product, qty = 1) => {
+    if (product.stock === 0) {
+      alert("This product is out of stock.");
+      return;
+    }
 
-        const updatedCart = currentCart.map((item) =>
-          item.name === product.name
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+    const existing = cart.find((item) => item.name === product.name);
+    const currentQty = existing ? existing.quantity : 0;
+    const maxQty =
+      product.stock !== undefined ? product.stock : Infinity;
 
-        localStorage.setItem(
-          "cart",
-          JSON.stringify(updatedCart)
-        );
+    if (currentQty >= maxQty) {
+      alert(`Only ${product.stock} available in stock.`);
+      return;
+    }
 
-        return updatedCart;
-      }
+    const addQty = Math.min(qty, maxQty - currentQty);
 
-      if (product.stock === 0) {
-        alert("This product is out of stock.");
-        return currentCart;
-      }
+    setCart((current) => {
+      const found = current.find((item) => item.name === product.name);
 
-      const updatedCart = [
-        ...currentCart,
-        {
-          ...product,
-          quantity: 1
-        }
-      ];
-
-      localStorage.setItem(
-        "cart",
-        JSON.stringify(updatedCart)
-      );
-
-      return updatedCart;
+      return found
+        ? current.map((item) =>
+            item.name === product.name
+              ? { ...item, quantity: item.quantity + addQty }
+              : item
+          )
+        : [...current, { ...product, quantity: addQty }];
     });
   };
 
   const increaseQuantity = (name) => {
-    setCart((currentCart) => {
-      const updatedCart = currentCart.map((item) => {
-        if (item.name !== name) {
-          return item;
-        }
+    const target = cart.find((item) => item.name === name);
+    if (!target) return;
 
-        if (
-          item.stock !== undefined &&
-          item.quantity >= item.stock
-        ) {
-          alert(`Only ${item.stock} available in stock.`);
-          return item;
-        }
+    if (target.stock !== undefined && target.quantity >= target.stock) {
+      alert(`Only ${target.stock} available in stock.`);
+      return;
+    }
 
-        return {
-          ...item,
-          quantity: item.quantity + 1
-        };
-      });
-
-      localStorage.setItem(
-        "cart",
-        JSON.stringify(updatedCart)
-      );
-
-      return updatedCart;
-    });
+    setCart((current) =>
+      current.map((item) =>
+        item.name === name
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+    );
   };
 
   const decreaseQuantity = (name) => {
-    setCart((currentCart) => {
-      const updatedCart = currentCart
+    setCart((current) =>
+      current
         .map((item) =>
           item.name === name
-            ? {
-                ...item,
-                quantity: item.quantity - 1
-              }
+            ? { ...item, quantity: item.quantity - 1 }
             : item
         )
-        .filter((item) => item.quantity > 0);
-
-      localStorage.setItem(
-        "cart",
-        JSON.stringify(updatedCart)
-      );
-
-      return updatedCart;
-    });
+        .filter((item) => item.quantity > 0)
+    );
   };
 
   const removeFromCart = (index) => {
-    setCart((currentCart) => {
-      const updatedCart = currentCart.filter(
-        (_, i) => i !== index
-      );
-
-      localStorage.setItem(
-        "cart",
-        JSON.stringify(updatedCart)
-      );
-
-      return updatedCart;
-    });
+    setCart((current) => current.filter((_, i) => i !== index));
   };
 
   const clearCart = () => {
     setCart([]);
-    localStorage.removeItem("cart");
   };
 
   return (

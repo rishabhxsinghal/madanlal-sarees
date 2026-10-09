@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import shop from "../config";
 
 function Checkout() {
   const { cart, clearCart } = useCart();
@@ -34,7 +35,10 @@ function Checkout() {
   };
 
   const handleSubmit = (e) => {
+        
     e.preventDefault();
+
+    const orderId = "MS" + Date.now().toString().slice(-6);
 
     const orderItems = cart
       .map(
@@ -50,6 +54,8 @@ function Checkout() {
 
 I would like to place an order.
 
+Order ID: ${orderId}
+
 Customer Details:
 Name: ${form.name}
 Mobile: ${form.phone}
@@ -61,14 +67,22 @@ Order Details:
 ${orderItems}
 
 Total: ₹${total.toLocaleString("en-IN")}
+Delivery: To be confirmed
+Payment: To be confirmed (COD / UPI)
 
 Please confirm my order.`;
 
-    const whatsappNumber = "918273735072";
+        const whatsappNumber = shop.whatsapp;
 
     const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
       message
     )}`;
+
+    // Save so the confirmation page can reopen WhatsApp
+    sessionStorage.setItem(
+      "lastOrder",
+      JSON.stringify({ orderId, whatsappURL })
+    );
 
     window.open(whatsappURL, "_blank");
 

@@ -2,8 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import products from "../data/products";
+import shop from "../config";
 import ProductCard from "./ProductCard";
 import Navbar from "./Navbar";
+
+const toNumber = (value) => Number(String(value).replace(/,/g, ""));
 
 function ProductDetails() {
   const location = useLocation();
@@ -31,16 +34,15 @@ function ProductDetails() {
     productImages[0]
   );
 
-  const [quantity, setQuantity] = useState(
-    stock > 0 ? 1 : 0
-  );
-
+  const [quantity, setQuantity] = useState(stock > 0 ? 1 : 0);
   const [showImage, setShowImage] = useState(false);
+  const [added, setAdded] = useState(false);
 
   useEffect(() => {
     setSelectedImage(productImages[0]);
     setQuantity(stock > 0 ? 1 : 0);
-  }, [productImages, stock]);
+    setAdded(false);
+  }, [productImages, stock, name]);
 
   useEffect(() => {
     if (!name) return;
@@ -61,15 +63,10 @@ function ProductDetails() {
         description,
         stock
       },
-      ...existing.filter(
-        (item) => item.name !== name
-      )
+      ...existing.filter((item) => item.name !== name)
     ].slice(0, 4);
 
-    localStorage.setItem(
-      "recentlyViewed",
-      JSON.stringify(updated)
-    );
+    localStorage.setItem("recentlyViewed", JSON.stringify(updated));
   }, [
     name,
     image,
@@ -94,41 +91,28 @@ function ProductDetails() {
     }
   };
 
+  const productData = {
+    image,
+    images: productImages,
+    name,
+    price,
+    fabric,
+    occasion,
+    description,
+    stock
+  };
+
   const handleAddToCart = () => {
     if (!stock || stock === 0) return;
 
-    for (let i = 0; i < quantity; i++) {
-      addToCart({
-        image,
-        images: productImages,
-        name,
-        price,
-        fabric,
-        occasion,
-        description,
-        stock
-      });
-    }
-
-    alert(`${quantity} saree added to cart!`);
+    addToCart(productData, quantity);
+    setAdded(true);
   };
 
   const handleBuyNow = () => {
     if (!stock || stock === 0) return;
 
-    for (let i = 0; i < quantity; i++) {
-      addToCart({
-        image,
-        images: productImages,
-        name,
-        price,
-        fabric,
-        occasion,
-        description,
-        stock
-      });
-    }
-
+    addToCart(productData, quantity);
     navigate("/checkout");
   };
 
@@ -148,6 +132,20 @@ function ProductDetails() {
     );
   }
 
+  const matched = products.find((p) => p.name === name);
+
+  const discount = originalPrice
+    ? Math.round(
+        ((toNumber(originalPrice) - toNumber(price)) /
+          toNumber(originalPrice)) *
+          100
+      )
+    : 0;
+
+  const askLink = `https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(
+    `Hello ${shop.name}, I am interested in "${name}" (₹${price}). Is it available?`
+  )}`;
+
   return (
     <>
       <Navbar />
@@ -156,33 +154,32 @@ function ProductDetails() {
 
         <div className="product-gallery">
 
-          <div className="product-thumbnails">
-            {productImages.map((img, index) => (
-              <button
-                key={index}
-                className={
-                  selectedImage === img
-                    ? "thumbnail active"
-                    : "thumbnail"
-                }
-                onClick={() => setSelectedImage(img)}
-              >
-                <img
-                  src={img}
-                  alt={`${name} ${index + 1}`}
-                />
-              </button>
-            ))}
-          </div>
+          {productImages.length > 1 && (
+            <div className="product-thumbnails">
+              {productImages.map((img, index) => (
+                <button
+                  key={index}
+                  className={
+                    selectedImage === img
+                      ? "thumbnail active"
+                      : "thumbnail"
+                  }
+                  onClick={() => setSelectedImage(img)}
+                >
+                  <img
+                    src={img}
+                    alt={`${name} ${index + 1}`}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
 
           <div
             className="product-details-image"
             onClick={() => setShowImage(true)}
           >
-            <img
-              src={selectedImage}
-              alt={name}
-            />
+            <img src={selectedImage} alt={name} />
 
             <span className="image-zoom-text">
               CLICK TO VIEW
@@ -203,7 +200,7 @@ function ProductDetails() {
           <p className="product-details-small">
             {stock === 0
               ? "SOLD OUT"
-              : "NEW ARRIVAL"}
+              : matched?.badge || "MADANLAL SAREES"}
           </p>
 
           <h1>{name}</h1>
@@ -218,6 +215,12 @@ function ProductDetails() {
                 ₹{originalPrice}
               </span>
             )}
+
+            {discount > 0 && (
+              <span className="details-discount">
+                {discount}% OFF
+              </span>
+            )}
           </div>
 
           {stock > 0 && stock <= 2 && (
@@ -227,9 +230,7 @@ function ProductDetails() {
           )}
 
           {stock > 2 && (
-            <p className="details-in-stock">
-              In Stock
-            </p>
+            <p className="details-in-stock">In Stock</p>
           )}
 
           {stock === 0 && (
@@ -259,9 +260,7 @@ function ProductDetails() {
           <div className="quantity-selector">
             <button
               onClick={decreaseQuantity}
-              disabled={
-                stock === 0 || quantity <= 1
-              }
+              disabled={stock === 0 || quantity <= 1}
             >
               −
             </button>
@@ -270,10 +269,7 @@ function ProductDetails() {
 
             <button
               onClick={increaseQuantity}
-              disabled={
-                stock === 0 ||
-                quantity >= stock
-              }
+              disabled={stock === 0 || quantity >= stock}
             >
               +
             </button>
@@ -288,6 +284,8 @@ function ProductDetails() {
             >
               {stock === 0
                 ? "OUT OF STOCK"
+                : added
+                ? "ADDED ✓"
                 : "ADD TO CART"}
             </button>
 
@@ -296,12 +294,34 @@ function ProductDetails() {
               onClick={handleBuyNow}
               disabled={stock === 0}
             >
-              {stock === 0
-                ? "OUT OF STOCK"
-                : "BUY NOW"}
+              {stock === 0 ? "OUT OF STOCK" : "BUY NOW"}
             </button>
 
           </div>
+
+          {added && (
+            <div className="cart-added-note">
+              <span>Added to your cart.</span>
+              <button onClick={() => navigate("/cart")}>
+                VIEW CART
+              </button>
+            </div>
+          )}
+
+          <a
+            className="details-whatsapp-btn"
+            href={askLink}
+            target="_blank"
+            rel="noreferrer"
+          >
+            ASK ABOUT THIS SAREE ON WHATSAPP
+          </a>
+
+          <ul className="product-trust">
+            <li>Order directly on WhatsApp</li>
+            <li>We confirm availability before dispatch</li>
+            <li>Visit our showroom in {shop.city}</li>
+          </ul>
 
         </div>
       </div>
@@ -316,10 +336,7 @@ function ProductDetails() {
         <div className="product-grid">
 
           {products
-            .filter(
-              (product) =>
-                product.name !== name
-            )
+            .filter((product) => product.name !== name)
             .slice(0, 3)
             .map((product) => (
               <ProductCard
@@ -328,14 +345,10 @@ function ProductDetails() {
                 images={product.images}
                 name={product.name}
                 price={product.price}
-                originalPrice={
-                  product.originalPrice
-                }
+                originalPrice={product.originalPrice}
                 fabric={product.fabric}
                 occasion={product.occasion}
-                description={
-                  product.description
-                }
+                description={product.description}
                 badge={product.badge}
                 stock={product.stock}
               />
@@ -360,9 +373,7 @@ function ProductDetails() {
           <img
             src={selectedImage}
             alt={name}
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
       )}

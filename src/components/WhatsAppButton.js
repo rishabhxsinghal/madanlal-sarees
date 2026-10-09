@@ -1,15 +1,14 @@
 import { MessageCircle } from "lucide-react";
+import shop from "../config";
 
 function WhatsAppButton() {
-  const whatsappNumber = "918273735072";
-
   const message = encodeURIComponent(
-    "Hello Madanlal Sarees, I would like to know more about your sarees."
+    `Hello ${shop.name}, I would like to know more about your sarees.`
   );
 
   const handleWhatsApp = () => {
     window.open(
-      `https://wa.me/${whatsappNumber}?text=${message}`,
+      `https://wa.me/${shop.whatsapp}?text=${message}`,
       "_blank"
     );
   };

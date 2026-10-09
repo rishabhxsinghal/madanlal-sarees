@@ -1,18 +1,34 @@
 import { Link } from "react-router-dom";
+import shop from "../config";
 
 function Footer() {
+  const whatsappLink = `https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(
+    `Hello ${shop.name}, I would like to know more about your sarees.`
+  )}`;
+
   return (
     <footer className="footer">
 
       <div className="footer-container">
 
         <div className="footer-brand">
-          <h2>MADANLAL SAREES</h2>
+          <h2>{shop.name.toUpperCase()}</h2>
+
+          <div className="footer-gold-line"></div>
 
           <p>
             Timeless Indian elegance, beautifully woven
             for every occasion.
           </p>
+
+          <a
+            className="footer-whatsapp"
+            href={whatsappLink}
+            target="_blank"
+            rel="noreferrer"
+          >
+            CHAT ON WHATSAPP
+          </a>
         </div>
 
         <div className="footer-column">
@@ -35,26 +51,29 @@ function Footer() {
         <div className="footer-column">
           <h3>VISIT US</h3>
 
-          <p>
-            Madanlal Pradeep Kumar
-            <br />
-            Saree Showroom
-          </p>
+          <p className="footer-showroom">{shop.fullName}</p>
 
           <p>
-            Near Chota Bazar,
+            {shop.addressLine1},
             <br />
-            Shikarpur, Bulandshahr
-            <br />
-            Uttar Pradesh
+            {shop.city}, {shop.state}
           </p>
+
+          <a href={`tel:+${shop.whatsapp}`}>{shop.phoneDisplay}</a>
+
+          {shop.timing && (
+            <p className="footer-timing">
+              {shop.timing}
+              {shop.closedDay && ` (Closed on ${shop.closedDay})`}
+            </p>
+          )}
         </div>
 
       </div>
 
       <div className="footer-bottom">
         <p>
-          © 2026 Madanlal Sarees. All Rights Reserved.
+          © {new Date().getFullYear()} {shop.name}. All Rights Reserved.
         </p>
       </div>
 
