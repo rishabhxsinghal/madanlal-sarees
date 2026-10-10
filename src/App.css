@@ -4824,3 +4824,454 @@ select {
     margin-left: auto;
   }
 }
+/* =========================================
+   MOBILE HERO + ANNOUNCEMENT (wide phones like iPhone Pro Max)
+========================================= */
+
+@media (max-width: 768px) {
+  /* hero grows with screen width, so the crop stays the same on every phone */
+  .hero {
+    min-height: max(560px, 140vw);
+  }
+
+  /* always keep the top of the photo (face) visible */
+  .hero-bg {
+    object-position: center top;
+  }
+
+  /* readable announcement bar */
+  .announcement-bar {
+    gap: 10px;
+    padding: 10px 14px;
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    line-height: 1.5;
+  }
+}
+/* =========================================
+   FOOTER ACCORDION + COMPACT MOBILE
+========================================= */
+
+/* Desktop: headings stay plain, lists always visible */
+.footer-accordion-head {
+  display: block;
+  width: auto;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  pointer-events: none;
+}
+
+.footer-heading {
+  color: #d2aa7f;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 2px;
+}
+
+.footer-accordion-icon {
+  display: none;
+}
+
+.footer-accordion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .footer {
+    padding: 38px 20px 86px; /* extra bottom space keeps copyright clear of the chat button */
+  }
+
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .footer-brand {
+    grid-column: auto;
+    padding-bottom: 26px;
+  }
+
+  .footer-brand h2 {
+    margin-bottom: 12px;
+    font-size: 22px;
+  }
+
+  .footer-gold-line {
+    margin-bottom: 14px;
+  }
+
+  .footer-brand p {
+    max-width: none;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  /* the floating chat button already does this job */
+  .footer-whatsapp {
+    display: none;
+  }
+
+  /* Quick Links and Help: tap to open */
+  .footer-accordion {
+    gap: 0;
+    border-top: 1px solid #70464c;
+  }
+
+  .footer-accordion-head {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+    padding: 17px 0;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  .footer-accordion-icon {
+    display: block;
+    color: #d2aa7f;
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .footer-accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    gap: 0;
+    transition: max-height 0.3s ease;
+  }
+
+  .footer-accordion-body a {
+    padding: 9px 0;
+  }
+
+  .footer-accordion.open .footer-accordion-body {
+    max-height: 260px;
+    padding-bottom: 12px;
+  }
+
+  /* Visit us */
+  .footer-visit {
+    gap: 8px;
+    padding-top: 22px;
+    border-top: 1px solid #70464c;
+  }
+
+  .footer-visit h3 {
+    margin-bottom: 4px;
+  }
+
+  .footer-visit p {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .footer-visit a {
+    font-size: 13px;
+  }
+
+  .footer-bottom {
+    margin-top: 26px;
+    padding-top: 18px;
+    padding-bottom: 0;
+  }
+
+  /* Home page: "Visit Our Showroom" section, compact */
+  .home-visit {
+    padding: 50px 20px;
+  }
+
+  .home-visit-content h2 {
+    font-size: 28px;
+  }
+
+  .home-visit-line {
+    margin: 18px auto;
+  }
+
+  .home-visit-name {
+    font-size: 14px;
+  }
+
+  .home-visit-address {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .home-visit-buttons {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 26px;
+  }
+
+  .home-visit-primary,
+  .home-visit-secondary {
+    flex: 1;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 8px;
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    text-align: center;
+  }
+}
+/* =========================================
+   COLLECTIONS: no cropping, single heading
+========================================= */
+
+/* The hero already says "Our Collections", so hide the repeated heading */
+.collections-heading {
+  display: none;
+}
+
+.collections-hero {
+  min-height: 300px;
+}
+
+.collections-section {
+  max-width: 1080px;
+  padding-top: 60px;
+}
+
+/* Portrait frame instead of a fixed height; keep the top (face) visible */
+.collection-image {
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+
+.collection-image img {
+  object-fit: cover;
+  object-position: center top;
+}
+
+@media (max-width: 900px) {
+  .collections-hero {
+    min-height: 240px;
+  }
+
+  .collections-section {
+    padding-top: 40px;
+  }
+}
+/* =========================================
+   ADMIN: ADD / EDIT FORM
+========================================= */
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-small-btn {
+  padding: 11px 20px;
+  border: 1px solid #4a1f25;
+  background: #4a1f25;
+  color: #ffffff;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  cursor: pointer;
+}
+
+.admin-small-btn:hover {
+  background: #6b3038;
+}
+
+.admin-item-actions {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.admin-edit {
+  padding: 0 0 2px;
+  border: none;
+  border-bottom: 1px solid #4a1f25;
+  background: transparent;
+  color: #4a1f25;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+}
+
+.admin-form {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 28px 36px;
+  background: #ffffff;
+  border: 1px solid #eee5db;
+}
+
+.admin-form h1 {
+  margin-bottom: 24px;
+}
+
+.admin-field {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 20px;
+}
+
+.admin-field > label {
+  display: block;
+  margin-bottom: 8px;
+  color: #655b55;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+
+.admin-field input,
+.admin-field select,
+.admin-field textarea {
+  width: 100%;
+  padding: 0 14px;
+  border: 1px solid #d8cec1;
+  background: #ffffff;
+  color: #4a1f25;
+  font-size: 16px;
+  outline: none;
+}
+
+.admin-field input,
+.admin-field select {
+  height: 46px;
+}
+
+.admin-field textarea {
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+.admin-field input:focus,
+.admin-field select:focus,
+.admin-field textarea:focus {
+  border-color: #8b5e3c;
+}
+
+.admin-row {
+  display: flex;
+  gap: 14px;
+}
+
+.admin-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.admin-photo {
+  position: relative;
+  width: 92px;
+  height: 120px;
+  overflow: hidden;
+  background: #f3ece2;
+  border: 1px solid #ddd2c6;
+}
+
+.admin-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.admin-photo-main,
+.admin-photo-set {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 5px 2px;
+  border: none;
+  background: rgba(74, 31, 37, 0.88);
+  color: #ffffff;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  text-align: center;
+}
+
+.admin-photo-set {
+  cursor: pointer;
+}
+
+.admin-photo-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #8b0000;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-upload {
+  display: inline-block;
+  padding: 13px 22px;
+  border: 1px dashed #8b5e3c;
+  background: #fdfbf8;
+  color: #4a1f25;
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  cursor: pointer;
+}
+
+.admin-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.admin-form-actions .admin-btn {
+  margin-top: 0;
+}
+
+.admin-form-actions .admin-btn-outline {
+  flex-shrink: 0;
+  padding: 0 24px;
+}
+
+@media (max-width: 520px) {
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-form {
+    padding: 24px 16px 28px;
+  }
+
+  .admin-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .admin-item-actions {
+    flex-direction: row;
+    margin-left: auto;
+  }
+}
