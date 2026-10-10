@@ -59,7 +59,7 @@ const products = [
     id: 4,
     image: saree4,
     images: [saree4],
-    name: "Festive Designer Saree",
+    name: "Festive Designer Saree 2",
     price: "5,999",
     originalPrice: "6,999",
     category: "festive",

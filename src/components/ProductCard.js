@@ -87,7 +87,7 @@ function ProductCard({
         }
       >
 
-        <img src={image} alt={name} />
+        <img src={image} alt={name} loading="lazy" decoding="async" />
 
         {badge && (
           <span className="product-badge">

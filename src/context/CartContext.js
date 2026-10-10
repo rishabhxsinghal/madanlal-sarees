@@ -4,38 +4,49 @@ import React, {
   useEffect,
   useState
 } from "react";
-import products from "../data/products";
+import { useProducts } from "./ProductsContext";
 
 const CartContext = createContext();
 
-// Load cart and refresh every item from products.js
-function loadCart() {
+function readCart() {
   try {
-    const saved = JSON.parse(localStorage.getItem("cart")) || [];
-
-    return saved
-      .map((item) => {
-        const latest = products.find((p) => p.name === item.name);
-        if (!latest) return null;
-
-        return {
-          ...item,
-          image: latest.image,
-          price: latest.price,
-          fabric: latest.fabric,
-          occasion: latest.occasion,
-          stock: latest.stock,
-          quantity: Math.min(item.quantity, latest.stock)
-        };
-      })
-      .filter((item) => item && item.quantity > 0);
+    return JSON.parse(localStorage.getItem("cart")) || [];
   } catch {
     return [];
   }
 }
 
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState(loadCart);
+  const { products, loading } = useProducts();
+  const [cart, setCart] = useState(readCart);
+
+  // Once products are loaded, refresh every cart item (image, price, stock)
+  useEffect(() => {
+    if (loading) return;
+
+    setCart((current) => {
+      const refreshed = current
+        .map((item) => {
+          const latest = products.find((p) => p.name === item.name);
+          if (!latest) return null;
+
+          return {
+            ...item,
+            image: latest.image,
+            price: latest.price,
+            fabric: latest.fabric,
+            occasion: latest.occasion,
+            stock: latest.stock,
+            quantity: Math.min(item.quantity, latest.stock)
+          };
+        })
+        .filter((item) => item && item.quantity > 0);
+
+      return JSON.stringify(refreshed) === JSON.stringify(current)
+        ? current
+        : refreshed;
+    });
+  }, [products, loading]);
 
   // Save cart whenever it changes
   useEffect(() => {

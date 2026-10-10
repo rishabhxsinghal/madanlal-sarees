@@ -130,6 +130,7 @@ function Shop() {
         <NewArrivals
           selectedCategory={category}
           sortBy={sortBy}
+          shopMode
         />
 
       </main>

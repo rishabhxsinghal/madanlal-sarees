@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import products from "../data/products";
+import { useProducts } from "../context/ProductsContext";
 import shop from "../config";
 import ProductCard from "./ProductCard";
 import Navbar from "./Navbar";
@@ -12,6 +12,7 @@ function ProductDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { products } = useProducts();
 
   const {
     image,

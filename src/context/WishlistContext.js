@@ -4,40 +4,51 @@ import React, {
   useEffect,
   useState
 } from "react";
-import products from "../data/products";
+import { useProducts } from "./ProductsContext";
 
 const WishlistContext = createContext();
 
-// Load wishlist and refresh every item from products.js
-function loadWishlist() {
+function readWishlist() {
   try {
-    const saved = JSON.parse(localStorage.getItem("wishlist")) || [];
-
-    return saved
-      .map((item) => {
-        const latest = products.find((p) => p.name === item.name);
-        if (!latest) return null;
-
-        return {
-          ...item,
-          image: latest.image,
-          images: latest.images,
-          price: latest.price,
-          originalPrice: latest.originalPrice,
-          fabric: latest.fabric,
-          occasion: latest.occasion,
-          description: latest.description,
-          stock: latest.stock
-        };
-      })
-      .filter(Boolean);
+    return JSON.parse(localStorage.getItem("wishlist")) || [];
   } catch {
     return [];
   }
 }
 
 export function WishlistProvider({ children }) {
-  const [wishlist, setWishlist] = useState(loadWishlist);
+  const { products, loading } = useProducts();
+  const [wishlist, setWishlist] = useState(readWishlist);
+
+  // Once products are loaded, refresh every wishlist item
+  useEffect(() => {
+    if (loading) return;
+
+    setWishlist((current) => {
+      const refreshed = current
+        .map((item) => {
+          const latest = products.find((p) => p.name === item.name);
+          if (!latest) return null;
+
+          return {
+            ...item,
+            image: latest.image,
+            images: latest.images,
+            price: latest.price,
+            originalPrice: latest.originalPrice,
+            fabric: latest.fabric,
+            occasion: latest.occasion,
+            description: latest.description,
+            stock: latest.stock
+          };
+        })
+        .filter(Boolean);
+
+      return JSON.stringify(refreshed) === JSON.stringify(current)
+        ? current
+        : refreshed;
+    });
+  }, [products, loading]);
 
   // Save wishlist whenever it changes
   useEffect(() => {
