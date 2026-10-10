@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import products from "../data/products";
+import { useProducts } from "../context/ProductsContext";
 import Navbar from "./Navbar";
 
 function Search() {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const { products } = useProducts();
+
+  const text = query.trim().toLowerCase();
 
   const results = products.filter((product) => {
     const searchText = `
@@ -15,22 +18,22 @@ function Search() {
       ${product.occasion}
     `.toLowerCase();
 
-    return searchText.includes(query.toLowerCase());
+    return searchText.includes(text);
   });
 
   const handleProductClick = (product) => {
     navigate("/product", {
-     state: {
-  image: product.image,
-  images: product.images,
-  name: product.name,
-  price: product.price,
-  originalPrice: product.originalPrice,
-  fabric: product.fabric,
-  occasion: product.occasion,
-  description: product.description,
-  stock: product.stock
-}
+      state: {
+        image: product.image,
+        images: product.images,
+        name: product.name,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        fabric: product.fabric,
+        occasion: product.occasion,
+        description: product.description,
+        stock: product.stock
+      }
     });
   };
 
@@ -54,23 +57,24 @@ function Search() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          {query && (
-  <button
-    className="clear-search-btn"
-    onClick={() => setQuery("")}
-  >
-    CLEAR SEARCH
-  </button>
-)}
 
           {query && (
+            <button
+              className="clear-search-btn"
+              onClick={() => setQuery("")}
+            >
+              CLEAR SEARCH
+            </button>
+          )}
+
+          {text && (
             <p className="search-result-count">
               {results.length}{" "}
               {results.length === 1 ? "Saree" : "Sarees"} found
             </p>
           )}
 
-          {query && (
+          {text && (
             <div className="search-results">
 
               {results.length > 0 ? (
@@ -87,7 +91,10 @@ function Search() {
 
                     <div>
                       <h3>{product.name}</h3>
-                      <p>₹{product.price}</p>
+                      <p>
+                        ₹{product.price}
+                        {product.stock === 0 && " · Sold out"}
+                      </p>
                     </div>
                   </div>
                 ))
