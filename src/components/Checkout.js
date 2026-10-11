@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 import { useCart } from "../context/CartContext";
 import shop from "../config";
 
@@ -35,7 +37,6 @@ function Checkout() {
   };
 
   const handleSubmit = (e) => {
-        
     e.preventDefault();
 
     const orderId = "MS" + Date.now().toString().slice(-6);
@@ -50,7 +51,7 @@ function Checkout() {
       )
       .join("\n");
 
-    const message = `Hello Madanlal Sarees,
+    const message = `Hello ${shop.name},
 
 I would like to place an order.
 
@@ -72,9 +73,7 @@ Payment: To be confirmed (COD / UPI)
 
 Please confirm my order.`;
 
-        const whatsappNumber = shop.whatsapp;
-
-    const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+    const whatsappURL = `https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(
       message
     )}`;
 
@@ -84,7 +83,29 @@ Please confirm my order.`;
       JSON.stringify({ orderId, whatsappURL })
     );
 
+    // WhatsApp first (must happen right on the click)
     window.open(whatsappURL, "_blank");
+
+    // Also keep a record in the admin panel. If this fails, the order
+    // still reaches us on WhatsApp.
+    addDoc(collection(db, "orders"), {
+      orderId,
+      name: form.name.trim().slice(0, 100),
+      phone: form.phone,
+      address: form.address.trim().slice(0, 400),
+      city: form.city.trim().slice(0, 100),
+      pincode: form.pincode,
+      items: cart.map((item) => ({
+        name: item.name,
+        productName: item.productName || item.name,
+        colour: item.colour || "",
+        quantity: item.quantity,
+        price: item.price
+      })),
+      total,
+      status: "new",
+      createdAt: serverTimestamp()
+    }).catch(() => {});
 
     clearCart();
     navigate("/order-confirmation");

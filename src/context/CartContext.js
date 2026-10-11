@@ -27,17 +27,23 @@ export function CartProvider({ children }) {
     setCart((current) => {
       const refreshed = current
         .map((item) => {
-          const latest = products.find((p) => p.name === item.name);
+          const baseName = item.productName || item.name;
+          const latest = products.find((p) => p.name === baseName);
           if (!latest) return null;
+
+          const variant = item.colour
+            ? latest.variants.find((v) => v.colour === item.colour)
+            : latest.variants[0];
+          if (!variant) return null;
 
           return {
             ...item,
-            image: latest.image,
+            image: variant.images[0] || latest.image,
             price: latest.price,
             fabric: latest.fabric,
             occasion: latest.occasion,
-            stock: latest.stock,
-            quantity: Math.min(item.quantity, latest.stock)
+            stock: variant.stock,
+            quantity: Math.min(item.quantity, variant.stock)
           };
         })
         .filter((item) => item && item.quantity > 0);
@@ -57,6 +63,15 @@ export function CartProvider({ children }) {
   const addToCart = (product, qty = 1) => {
     if (product.stock === 0) {
       alert("This product is out of stock.");
+      return;
+    }
+
+    // a multi-colour saree needs a colour (e.g. added from the wishlist)
+    const baseName = product.productName || product.name;
+    const catalogItem = products.find((p) => p.name === baseName);
+
+    if (catalogItem && catalogItem.variants.length > 1 && !product.colour) {
+      alert("Is saree ke kai colours hain. Product page pe jaake colour chuno.");
       return;
     }
 

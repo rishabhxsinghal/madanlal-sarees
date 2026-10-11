@@ -83,6 +83,7 @@ function NewArrivals({
               description={product.description}
               badge={product.badge}
               stock={product.stock}
+              variants={product.variants}
             />
           ))}
         </div>

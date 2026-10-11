@@ -2,149 +2,118 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductsContext";
+import normalizeProduct from "../utils/normalizeProduct";
 import shop from "../config";
 import ProductCard from "./ProductCard";
 import Navbar from "./Navbar";
 
 const toNumber = (value) => Number(String(value).replace(/,/g, ""));
 
-function ProductDetails() {
-  const location = useLocation();
+function ProductView({ product }) {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { products } = useProducts();
 
-  const {
-    image,
-    images,
-    name,
-    price,
-    originalPrice,
-    fabric,
-    occasion,
-    description,
-    stock
-  } = location.state || {};
+  const variants = product.variants;
+  const hasColours = variants.length > 1;
 
-  const productImages = useMemo(
-    () => images || [image],
-    [images, image]
-  );
-
-  const [selectedImage, setSelectedImage] = useState(
-    productImages[0]
-  );
-
-  const [quantity, setQuantity] = useState(stock > 0 ? 1 : 0);
+  const [colourIndex, setColourIndex] = useState(() => {
+    const firstInStock = variants.findIndex((v) => v.stock > 0);
+    return firstInStock >= 0 ? firstInStock : 0;
+  });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [quantity, setQuantity] = useState(1);
   const [showImage, setShowImage] = useState(false);
   const [added, setAdded] = useState(false);
 
-  useEffect(() => {
-    setSelectedImage(productImages[0]);
-    setQuantity(stock > 0 ? 1 : 0);
-    setAdded(false);
-  }, [productImages, stock, name]);
+  const variant = variants[colourIndex] || variants[0];
+  const productImages = variant.images;
+  const mainImage =
+    selectedImage && productImages.includes(selectedImage)
+      ? selectedImage
+      : productImages[0];
+
+  const stock = variant.stock;
+  const qty = stock > 0 ? Math.min(Math.max(quantity, 1), stock) : 0;
 
   useEffect(() => {
-    if (!name) return;
+    let existing = [];
 
-    const existing = JSON.parse(
-      localStorage.getItem("recentlyViewed") || "[]"
-    );
+    try {
+      existing = JSON.parse(localStorage.getItem("recentlyViewed") || "[]");
+    } catch {
+      existing = [];
+    }
 
     const updated = [
       {
-        image,
-        images: productImages,
-        name,
-        price,
-        originalPrice,
-        fabric,
-        occasion,
-        description,
-        stock
+        image: product.image,
+        images: product.images,
+        name: product.name,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        fabric: product.fabric,
+        occasion: product.occasion,
+        description: product.description,
+        stock: product.stock
       },
-      ...existing.filter((item) => item.name !== name)
+      ...existing.filter((item) => item.name !== product.name)
     ].slice(0, 4);
 
     localStorage.setItem("recentlyViewed", JSON.stringify(updated));
-  }, [
-    name,
-    image,
-    productImages,
-    price,
-    originalPrice,
-    fabric,
-    occasion,
-    description,
-    stock
-  ]);
+  }, [product]);
 
-  const increaseQuantity = () => {
-    if (quantity < stock) {
-      setQuantity(quantity + 1);
-    }
+  const chooseColour = (index) => {
+    setColourIndex(index);
+    setSelectedImage(null);
+    setQuantity(1);
+    setAdded(false);
   };
 
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
-  };
+  const cartName =
+    hasColours && variant.colour
+      ? `${product.name} - ${variant.colour}`
+      : product.name;
 
   const productData = {
-    image,
+    image: productImages[0],
     images: productImages,
-    name,
-    price,
-    fabric,
-    occasion,
-    description,
+    name: cartName,
+    productName: product.name,
+    colour: hasColours ? variant.colour : "",
+    price: product.price,
+    fabric: product.fabric,
+    occasion: product.occasion,
+    description: product.description,
     stock
   };
 
   const handleAddToCart = () => {
-    if (!stock || stock === 0) return;
+    if (stock === 0) return;
 
-    addToCart(productData, quantity);
+    addToCart(productData, qty);
     setAdded(true);
   };
 
   const handleBuyNow = () => {
-    if (!stock || stock === 0) return;
+    if (stock === 0) return;
 
-    addToCart(productData, quantity);
+    addToCart(productData, qty);
     navigate("/checkout");
   };
 
-  if (!name) {
-    return (
-      <>
-        <Navbar />
-
-        <div className="product-not-found">
-          <h2>Product Not Found</h2>
-
-          <button onClick={() => navigate("/shop")}>
-            BACK TO SHOP
-          </button>
-        </div>
-      </>
-    );
-  }
-
-  const matched = products.find((p) => p.name === name);
-
-  const discount = originalPrice
+  const discount = product.originalPrice
     ? Math.round(
-        ((toNumber(originalPrice) - toNumber(price)) /
-          toNumber(originalPrice)) *
+        ((toNumber(product.originalPrice) - toNumber(product.price)) /
+          toNumber(product.originalPrice)) *
           100
       )
     : 0;
 
   const askLink = `https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(
-    `Hello ${shop.name}, I am interested in "${name}" (₹${price}). Is it available?`
+    `Hello ${shop.name}, I am interested in "${product.name}"${
+      hasColours && variant.colour ? ` in ${variant.colour}` : ""
+    } (₹${product.price}). Is it available?`
   )}`;
 
   return (
@@ -159,9 +128,9 @@ function ProductDetails() {
             <div className="product-thumbnails">
               {productImages.map((img, index) => (
                 <button
-                  key={index}
+                  key={img + index}
                   className={
-                    selectedImage === img
+                    mainImage === img
                       ? "thumbnail active"
                       : "thumbnail"
                   }
@@ -169,7 +138,7 @@ function ProductDetails() {
                 >
                   <img
                     src={img}
-                    alt={`${name} ${index + 1}`}
+                    alt={`${product.name} ${index + 1}`}
                   />
                 </button>
               ))}
@@ -180,7 +149,7 @@ function ProductDetails() {
             className="product-details-image"
             onClick={() => setShowImage(true)}
           >
-            <img src={selectedImage} alt={name} />
+            <img src={mainImage} alt={product.name} />
 
             <span className="image-zoom-text">
               CLICK TO VIEW
@@ -199,21 +168,21 @@ function ProductDetails() {
           </button>
 
           <p className="product-details-small">
-            {stock === 0
+            {product.stock === 0
               ? "SOLD OUT"
-              : matched?.badge || "MADANLAL SAREES"}
+              : product.badge || "MADANLAL SAREES"}
           </p>
 
-          <h1>{name}</h1>
+          <h1>{product.name}</h1>
 
           <div className="details-price">
             <span className="details-current-price">
-              ₹{price}
+              ₹{product.price}
             </span>
 
-            {originalPrice && (
+            {product.originalPrice && (
               <span className="details-original-price">
-                ₹{originalPrice}
+                ₹{product.originalPrice}
               </span>
             )}
 
@@ -223,6 +192,35 @@ function ProductDetails() {
               </span>
             )}
           </div>
+
+          {hasColours && (
+            <div className="colour-picker">
+              <p className="colour-label">
+                COLOUR: <strong>{variant.colour}</strong>
+                {stock === 0 && " (Sold out)"}
+              </p>
+
+              <div className="colour-options">
+                {variants.map((v, i) => (
+                  <button
+                    key={v.colour + i}
+                    type="button"
+                    className={
+                      "colour-swatch" +
+                      (i === colourIndex ? " active" : "") +
+                      (v.stock === 0 ? " soldout" : "")
+                    }
+                    style={{ "--swatch": v.hex }}
+                    onClick={() => chooseColour(i)}
+                    title={v.colour}
+                    aria-label={v.colour}
+                  >
+                    <span />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {stock > 0 && stock <= 2 && (
             <p className="details-low-stock">
@@ -241,36 +239,36 @@ function ProductDetails() {
           )}
 
           <p className="product-description">
-            {description}
+            {product.description}
           </p>
 
           <div className="product-meta">
 
             <div>
               <span>FABRIC</span>
-              <strong>{fabric}</strong>
+              <strong>{product.fabric}</strong>
             </div>
 
             <div>
               <span>OCCASION</span>
-              <strong>{occasion}</strong>
+              <strong>{product.occasion}</strong>
             </div>
 
           </div>
 
           <div className="quantity-selector">
             <button
-              onClick={decreaseQuantity}
-              disabled={stock === 0 || quantity <= 1}
+              onClick={() => setQuantity(qty - 1)}
+              disabled={stock === 0 || qty <= 1}
             >
               −
             </button>
 
-            <span>{quantity}</span>
+            <span>{qty}</span>
 
             <button
-              onClick={increaseQuantity}
-              disabled={stock === 0 || quantity >= stock}
+              onClick={() => setQuantity(qty + 1)}
+              disabled={stock === 0 || qty >= stock}
             >
               +
             </button>
@@ -337,21 +335,22 @@ function ProductDetails() {
         <div className="product-grid">
 
           {products
-            .filter((product) => product.name !== name)
+            .filter((p) => p.name !== product.name)
             .slice(0, 3)
-            .map((product) => (
+            .map((p) => (
               <ProductCard
-                key={product.id}
-                image={product.image}
-                images={product.images}
-                name={product.name}
-                price={product.price}
-                originalPrice={product.originalPrice}
-                fabric={product.fabric}
-                occasion={product.occasion}
-                description={product.description}
-                badge={product.badge}
-                stock={product.stock}
+                key={p.id}
+                image={p.image}
+                images={p.images}
+                name={p.name}
+                price={p.price}
+                originalPrice={p.originalPrice}
+                fabric={p.fabric}
+                occasion={p.occasion}
+                description={p.description}
+                badge={p.badge}
+                stock={p.stock}
+                variants={p.variants}
               />
             ))}
 
@@ -372,8 +371,8 @@ function ProductDetails() {
           </button>
 
           <img
-            src={selectedImage}
-            alt={name}
+            src={mainImage}
+            alt={product.name}
             onClick={(e) => e.stopPropagation()}
           />
         </div>
@@ -381,6 +380,40 @@ function ProductDetails() {
 
     </>
   );
+}
+
+function ProductDetails() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { products } = useProducts();
+
+  const state = location.state;
+  const name = state?.name;
+  const found = products.find((p) => p.name === name);
+
+  // latest data from the database, falling back to what the card sent
+  const product = useMemo(
+    () => (name ? normalizeProduct({ ...state, ...(found || {}) }) : null),
+    [name, state, found]
+  );
+
+  if (!product) {
+    return (
+      <>
+        <Navbar />
+
+        <div className="product-not-found">
+          <h2>Product Not Found</h2>
+
+          <button onClick={() => navigate("/shop")}>
+            BACK TO SHOP
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  return <ProductView key={product.name} product={product} />;
 }
 
 export default ProductDetails;

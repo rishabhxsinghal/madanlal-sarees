@@ -9,11 +9,15 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
+  orderBy,
+  query,
   setDoc,
   updateDoc
 } from "firebase/firestore";
 import { auth, db, ADMIN_EMAIL } from "../firebase";
 import localProducts from "../data/products";
+import normalizeProduct from "../utils/normalizeProduct";
+import AdminOrders from "./AdminOrders";
 
 // ---- Cloudinary (fill these two) ----
 const CLOUD_NAME = "agggcodl";
@@ -21,6 +25,7 @@ const UPLOAD_PRESET = "madanlal_products";
 // -------------------------------------
 
 const MAX_PHOTOS = 6;
+const MAX_COLOURS = 8;
 
 const CATEGORIES = [
   { value: "silk", label: "Silk" },
@@ -42,7 +47,14 @@ const IMPORT_IMAGES = {
 
 const imgPath = (file) => `/images/products/${file}`;
 
-const emptyForm = {
+const emptyVariant = () => ({
+  colour: "",
+  hex: "#8b1a2b",
+  stock: "1",
+  images: []
+});
+
+const emptyForm = () => ({
   docId: "",
   id: 0,
   name: "",
@@ -52,10 +64,9 @@ const emptyForm = {
   fabric: "",
   occasion: "",
   badge: "",
-  stock: "1",
   description: "",
-  images: []
-};
+  variants: [emptyVariant()]
+});
 
 const toNumber = (value) => Number(String(value).replace(/,/g, ""));
 const formatPrice = (n) => Number(n).toLocaleString("en-IN");
@@ -75,7 +86,8 @@ function compressImage(file) {
       URL.revokeObjectURL(url);
 
       canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error("Photo process nahi hui"))),
+        (blob) =>
+          blob ? resolve(blob) : reject(new Error("Photo process nahi hui")),
         "image/jpeg",
         0.85
       );
@@ -123,6 +135,12 @@ function Admin() {
   const [formError, setFormError] = useState("");
   const [uploading, setUploading] = useState("");
   const [saving, setSaving] = useState(false);
+    const [tab, setTab] = useState("sarees");
+  const [orders, setOrders] = useState([]);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [visibleCount, setVisibleCount] = useState(20);
 
   const isAdmin = !!user && user.email === ADMIN_EMAIL;
 
@@ -141,6 +159,16 @@ function Admin() {
       (err) => setMessage("Sarees load nahi hui: " + err.message)
     );
   }, [isAdmin]);
+    useEffect(() => {
+    if (!isAdmin) return;
+
+    return onSnapshot(
+      query(collection(db, "orders"), orderBy("createdAt", "desc")),
+      (snap) =>
+        setOrders(snap.docs.map((d) => ({ ...d.data(), docId: d.id }))),
+      (err) => setMessage("Orders load nahi hue: " + err.message)
+    );
+  }, [isAdmin]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -153,11 +181,23 @@ function Admin() {
     }
   };
 
-  const changeStock = async (product, delta) => {
-    const next = Math.max(0, (product.stock || 0) + delta);
+  // change the stock of one colour
+  const changeStock = async (product, variantIndex, delta) => {
+    const normalized = normalizeProduct(product);
+
+    const variants = normalized.variants.map((v, i) =>
+      i === variantIndex
+        ? { ...v, stock: Math.max(0, v.stock + delta) }
+        : v
+    );
+
+    const total = variants.reduce((sum, v) => sum + v.stock, 0);
 
     try {
-      await updateDoc(doc(db, "products", product.docId), { stock: next });
+      await updateDoc(doc(db, "products", product.docId), {
+        variants,
+        stock: total
+      });
     } catch (err) {
       setMessage("Stock update nahi hua: " + err.message);
     }
@@ -224,35 +264,67 @@ function Admin() {
   const openNew = () => {
     setFormError("");
     setMessage("");
-    setForm({ ...emptyForm });
+    setForm(emptyForm());
   };
 
   const openEdit = (p) => {
+    const n = normalizeProduct(p);
+
     setFormError("");
     setMessage("");
     setForm({
       docId: p.docId,
-      id: p.id,
-      name: p.name || "",
-      price: String(p.price || "").replace(/,/g, ""),
-      originalPrice: p.originalPrice
-        ? String(p.originalPrice).replace(/,/g, "")
+      id: n.id,
+      name: n.name || "",
+      price: String(n.price || "").replace(/,/g, ""),
+      originalPrice: n.originalPrice
+        ? String(n.originalPrice).replace(/,/g, "")
         : "",
-      category: p.category || "silk",
-      fabric: p.fabric || "",
-      occasion: p.occasion || "",
-      badge: p.badge || "",
-      stock: String(p.stock ?? 0),
-      description: p.description || "",
-      images:
-        p.images && p.images.length > 0 ? p.images : p.image ? [p.image] : []
+      category: n.category || "silk",
+      fabric: n.fabric || "",
+      occasion: n.occasion || "",
+      badge: n.badge || "",
+      description: n.description || "",
+      variants: n.variants.map((v) => ({
+        colour: v.colour,
+        hex: v.hex,
+        stock: String(v.stock),
+        images: v.images
+      }))
     });
   };
 
   const setField = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  const handleFiles = async (e) => {
+  const setVariantField = (index, key) => (e) => {
+    const value = e.target.value;
+
+    setForm((f) => ({
+      ...f,
+      variants: f.variants.map((v, i) =>
+        i === index ? { ...v, [key]: value } : v
+      )
+    }));
+  };
+
+  const addColour = () => {
+    if (form.variants.length >= MAX_COLOURS) {
+      setFormError(`Zyada se zyada ${MAX_COLOURS} colours.`);
+      return;
+    }
+
+    setFormError("");
+    setForm((f) => ({ ...f, variants: [...f.variants, emptyVariant()] }));
+  };
+
+  const removeColour = (index) =>
+    setForm((f) => ({
+      ...f,
+      variants: f.variants.filter((_, i) => i !== index)
+    }));
+
+  const handleFiles = (variantIndex) => async (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = "";
 
@@ -263,8 +335,8 @@ function Admin() {
       return;
     }
 
-    if (form.images.length + files.length > MAX_PHOTOS) {
-      setFormError(`Ek saree ki zyada se zyada ${MAX_PHOTOS} photos.`);
+    if (form.variants[variantIndex].images.length + files.length > MAX_PHOTOS) {
+      setFormError(`Ek colour ki zyada se zyada ${MAX_PHOTOS} photos.`);
       return;
     }
 
@@ -282,23 +354,37 @@ function Admin() {
     }
 
     if (urls.length > 0) {
-      setForm((f) => ({ ...f, images: [...f.images, ...urls] }));
+      setForm((f) => ({
+        ...f,
+        variants: f.variants.map((v, i) =>
+          i === variantIndex ? { ...v, images: [...v.images, ...urls] } : v
+        )
+      }));
     }
 
     setUploading("");
   };
 
-  const makeMain = (index) =>
-    setForm((f) => {
-      const images = [...f.images];
-      const [picked] = images.splice(index, 1);
-      return { ...f, images: [picked, ...images] };
-    });
-
-  const removePhoto = (index) =>
+  const makeMain = (variantIndex, imageIndex) =>
     setForm((f) => ({
       ...f,
-      images: f.images.filter((_, i) => i !== index)
+      variants: f.variants.map((v, i) => {
+        if (i !== variantIndex) return v;
+
+        const images = [...v.images];
+        const [picked] = images.splice(imageIndex, 1);
+        return { ...v, images: [picked, ...images] };
+      })
+    }));
+
+  const removePhoto = (variantIndex, imageIndex) =>
+    setForm((f) => ({
+      ...f,
+      variants: f.variants.map((v, i) =>
+        i === variantIndex
+          ? { ...v, images: v.images.filter((_, j) => j !== imageIndex) }
+          : v
+      )
     }));
 
   const saveProduct = async (e) => {
@@ -308,6 +394,7 @@ function Admin() {
     const name = form.name.trim();
     const priceNum = toNumber(form.price);
     const originalNum = form.originalPrice ? toNumber(form.originalPrice) : 0;
+    const multi = form.variants.length > 1;
 
     if (!name) return setFormError("Saree ka naam likho.");
 
@@ -328,19 +415,51 @@ function Admin() {
     }
 
     if (form.originalPrice && !originalNum) {
-      return setFormError("Original price sirf number me likho, ya khali chhod do.");
+      return setFormError(
+        "Original price sirf number me likho, ya khali chhod do."
+      );
     }
 
-    if (form.images.length === 0) {
-      return setFormError("Kam se kam ek photo daalo.");
+    const seen = new Set();
+
+    for (let i = 0; i < form.variants.length; i++) {
+      const v = form.variants[i];
+      const label = v.colour.trim() || `Colour ${i + 1}`;
+
+      if (multi && !v.colour.trim()) {
+        return setFormError(`Colour ${i + 1} ka naam likho.`);
+      }
+
+      if (multi) {
+        const key = v.colour.trim().toLowerCase();
+
+        if (seen.has(key)) {
+          return setFormError(`"${v.colour.trim()}" colour do baar likha hai.`);
+        }
+
+        seen.add(key);
+      }
+
+      if (v.images.length === 0) {
+        return setFormError(`"${label}" ki kam se kam ek photo daalo.`);
+      }
     }
+
+    const variants = form.variants.map((v) => ({
+      colour: v.colour.trim(),
+      hex: v.hex,
+      images: v.images,
+      stock: Math.max(0, parseInt(v.stock, 10) || 0)
+    }));
 
     const id = form.id || Date.now();
 
     const data = {
       id,
-      image: form.images[0],
-      images: form.images,
+      variants,
+      image: variants[0].images[0],
+      images: variants[0].images,
+      stock: variants.reduce((sum, v) => sum + v.stock, 0),
       name,
       price: formatPrice(priceNum),
       originalPrice: originalNum ? formatPrice(originalNum) : "",
@@ -348,7 +467,6 @@ function Admin() {
       fabric: form.fabric.trim(),
       occasion: form.occasion.trim(),
       badge: form.badge,
-      stock: Math.max(0, parseInt(form.stock, 10) || 0),
       description: form.description.trim()
     };
 
@@ -438,6 +556,8 @@ function Admin() {
 
   // 4. add / edit form
   if (form) {
+    const multi = form.variants.length > 1;
+
     return (
       <div className="admin-page">
         <div className="admin-wrap">
@@ -449,58 +569,13 @@ function Admin() {
             {formError && <p className="admin-message">{formError}</p>}
 
             <div className="admin-field">
-              <label>PHOTOS (pehli photo main hoti hai)</label>
-
-              <div className="admin-photos">
-                {form.images.map((url, i) => (
-                  <div className="admin-photo" key={url + i}>
-                    <img src={url} alt="" />
-
-                    {i === 0 ? (
-                      <span className="admin-photo-main">MAIN</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="admin-photo-set"
-                        onClick={() => makeMain(i)}
-                      >
-                        MAIN BANAO
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      className="admin-photo-remove"
-                      onClick={() => removePhoto(i)}
-                      aria-label="Photo hatao"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <label className="admin-upload">
-                {uploading || "+ PHOTO ADD KARO"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFiles}
-                  disabled={!!uploading}
-                  hidden
-                />
-              </label>
-            </div>
-
-            <div className="admin-field">
               <label htmlFor="f-name">SAREE KA NAAM</label>
               <input
                 id="f-name"
                 type="text"
                 value={form.name}
                 onChange={setField("name")}
-                placeholder="Jaise: Royal Maroon Banarasi Saree"
+                placeholder="Jaise: Royal Banarasi Saree"
               />
             </div>
 
@@ -547,14 +622,18 @@ function Admin() {
               </div>
 
               <div className="admin-field">
-                <label htmlFor="f-stock">STOCK (kitni piece)</label>
-                <input
-                  id="f-stock"
-                  type="text"
-                  inputMode="numeric"
-                  value={form.stock}
-                  onChange={setField("stock")}
-                />
+                <label htmlFor="f-badge">BADGE (photo ke upar ka tag)</label>
+                <select
+                  id="f-badge"
+                  value={form.badge}
+                  onChange={setField("badge")}
+                >
+                  {BADGES.map((b) => (
+                    <option key={b || "none"} value={b}>
+                      {b || "Koi nahi"}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -595,21 +674,6 @@ function Admin() {
             </div>
 
             <div className="admin-field">
-              <label htmlFor="f-badge">BADGE (photo ke upar ka tag)</label>
-              <select
-                id="f-badge"
-                value={form.badge}
-                onChange={setField("badge")}
-              >
-                {BADGES.map((b) => (
-                  <option key={b || "none"} value={b}>
-                    {b || "Koi nahi"}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="admin-field">
               <label htmlFor="f-desc">DESCRIPTION</label>
               <textarea
                 id="f-desc"
@@ -619,6 +683,114 @@ function Admin() {
                 placeholder="Saree ke baare me 1-2 line"
               />
             </div>
+
+            {/* COLOURS */}
+
+            <p className="admin-section-title">
+              {multi ? "COLOURS, PHOTOS AUR STOCK" : "PHOTOS AUR STOCK"}
+            </p>
+
+            {form.variants.map((v, vi) => (
+              <div className="admin-variant" key={vi}>
+
+                <div className="admin-variant-head">
+                  <span>{multi ? `COLOUR ${vi + 1}` : "PEHLA COLOUR"}</span>
+
+                  {multi && (
+                    <button
+                      type="button"
+                      className="admin-delete"
+                      onClick={() => removeColour(vi)}
+                    >
+                      REMOVE
+                    </button>
+                  )}
+                </div>
+
+                <div className="admin-row admin-row-colour">
+                  <div className="admin-field">
+                    <label>
+                      COLOUR KA NAAM{multi ? "" : " (optional)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={v.colour}
+                      onChange={setVariantField(vi, "colour")}
+                      placeholder="Maroon"
+                    />
+                  </div>
+
+                  <div className="admin-field admin-field-small">
+                    <label>SHADE</label>
+                    <input
+                      type="color"
+                      value={v.hex}
+                      onChange={setVariantField(vi, "hex")}
+                    />
+                  </div>
+
+                  <div className="admin-field admin-field-small">
+                    <label>STOCK</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={v.stock}
+                      onChange={setVariantField(vi, "stock")}
+                    />
+                  </div>
+                </div>
+
+                <div className="admin-photos">
+                  {v.images.map((url, ii) => (
+                    <div className="admin-photo" key={url + ii}>
+                      <img src={url} alt="" />
+
+                      {ii === 0 ? (
+                        <span className="admin-photo-main">MAIN</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="admin-photo-set"
+                          onClick={() => makeMain(vi, ii)}
+                        >
+                          MAIN BANAO
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className="admin-photo-remove"
+                        onClick={() => removePhoto(vi, ii)}
+                        aria-label="Photo hatao"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <label className="admin-upload">
+                  {uploading || "+ PHOTO ADD KARO"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFiles(vi)}
+                    disabled={!!uploading}
+                    hidden
+                  />
+                </label>
+
+              </div>
+            ))}
+
+            <button
+              type="button"
+              className="admin-add-colour"
+              onClick={addColour}
+            >
+              + DOOSRA COLOUR ADD KARO
+            </button>
 
             <div className="admin-form-actions">
               <button
@@ -645,7 +817,45 @@ function Admin() {
     );
   }
 
-  // 5. admin panel (list)
+   // 5. admin panel
+  const newOrders = orders.filter((o) => o.status === "new").length;
+  const searchText = search.trim().toLowerCase();
+
+  const filtered = products.filter((p) => {
+    const n = normalizeProduct(p);
+
+    if (categoryFilter !== "all" && n.category !== categoryFilter) {
+      return false;
+    }
+
+    if (
+      stockFilter === "low" &&
+      !n.variants.some((v) => v.stock > 0 && v.stock <= 2)
+    ) {
+      return false;
+    }
+
+    if (stockFilter === "sold" && !n.variants.some((v) => v.stock === 0)) {
+      return false;
+    }
+
+    if (!searchText) return true;
+
+    const haystack = [
+      n.name,
+      n.fabric,
+      n.occasion,
+      n.category,
+      ...n.variants.map((v) => v.colour)
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return haystack.includes(searchText);
+  });
+
+  const shown = filtered.slice(0, visibleCount);
+
   return (
     <div className="admin-page">
       <div className="admin-wrap">
@@ -670,9 +880,30 @@ function Admin() {
           </div>
         </div>
 
+        <div className="admin-tabs">
+          <button
+            className={tab === "sarees" ? "admin-tab active" : "admin-tab"}
+            onClick={() => setTab("sarees")}
+          >
+            SAREES
+          </button>
+
+          <button
+            className={tab === "orders" ? "admin-tab active" : "admin-tab"}
+            onClick={() => setTab("orders")}
+          >
+            ORDERS
+            {newOrders > 0 && (
+              <span className="admin-tab-badge">{newOrders}</span>
+            )}
+          </button>
+        </div>
+
         {message && <p className="admin-message">{message}</p>}
 
-        {products.length === 0 ? (
+        {tab === "orders" ? (
+          <AdminOrders orders={orders} products={products} />
+        ) : products.length === 0 ? (
           <div className="admin-empty">
             <p>Database me abhi koi saree nahi hai.</p>
 
@@ -686,48 +917,150 @@ function Admin() {
           </div>
         ) : (
           <>
-            <p className="admin-count">{products.length} SAREES</p>
+            <div className="admin-controls">
+              <input
+                className="admin-search"
+                type="search"
+                placeholder="Saree dhundo (naam, colour, fabric)..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setVisibleCount(20);
+                }}
+              />
 
-            <div className="admin-list">
-              {products.map((p) => (
-                <div className="admin-item" key={p.docId}>
+              <div className="admin-chips">
+                {[{ value: "all", label: "All" }, ...CATEGORIES].map((c) => (
+                  <button
+                    key={c.value}
+                    className={
+                      categoryFilter === c.value
+                        ? "admin-chip active"
+                        : "admin-chip"
+                    }
+                    onClick={() => {
+                      setCategoryFilter(c.value);
+                      setVisibleCount(20);
+                    }}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
 
-                  <img src={p.image} alt={p.name} />
-
-                  <div className="admin-item-info">
-                    <h3>{p.name}</h3>
-                    <p>
-                      ₹{p.price} · {p.category} · {p.fabric}
-                    </p>
-
-                    <div className="admin-stock">
-                      <button onClick={() => changeStock(p, -1)}>−</button>
-                      <span>
-                        {p.stock === 0 ? "Sold out" : `${p.stock} in stock`}
-                      </span>
-                      <button onClick={() => changeStock(p, 1)}>+</button>
-                    </div>
-                  </div>
-
-                  <div className="admin-item-actions">
-                    <button
-                      className="admin-edit"
-                      onClick={() => openEdit(p)}
-                    >
-                      EDIT
-                    </button>
-
-                    <button
-                      className="admin-delete"
-                      onClick={() => removeProduct(p)}
-                    >
-                      DELETE
-                    </button>
-                  </div>
-
-                </div>
-              ))}
+              <div className="admin-chips">
+                {[
+                  { value: "all", label: "Sab stock" },
+                  { value: "low", label: "Kam stock (1-2)" },
+                  { value: "sold", label: "Sold out" }
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    className={
+                      stockFilter === s.value
+                        ? "admin-chip active"
+                        : "admin-chip"
+                    }
+                    onClick={() => {
+                      setStockFilter(s.value);
+                      setVisibleCount(20);
+                    }}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            <p className="admin-count">
+              {filtered.length} SAREES
+              {filtered.length !== products.length &&
+                ` (kul ${products.length})`}
+            </p>
+
+            {filtered.length === 0 ? (
+              <div className="admin-empty">
+                <p>Is search me koi saree nahi mili.</p>
+              </div>
+            ) : (
+              <div className="admin-list">
+                {shown.map((p) => {
+                  const n = normalizeProduct(p);
+                  const multi = n.variants.length > 1;
+
+                  return (
+                    <div className="admin-item" key={p.docId}>
+
+                      <img src={n.image} alt={n.name} />
+
+                      <div className="admin-item-info">
+                        <h3>{n.name}</h3>
+                        <p>
+                          ₹{n.price} · {n.category} · {n.fabric}
+                          {multi && ` · ${n.variants.length} colours`}
+                        </p>
+
+                        {n.variants.map((v, vi) => (
+                          <div className="admin-stock-row" key={vi}>
+                            {multi && (
+                              <>
+                                <span
+                                  className="admin-dot"
+                                  style={{ background: v.hex }}
+                                />
+                                <span className="admin-stock-name">
+                                  {v.colour}
+                                </span>
+                              </>
+                            )}
+
+                            <div className="admin-stock">
+                              <button onClick={() => changeStock(p, vi, -1)}>
+                                −
+                              </button>
+                              <span>
+                                {v.stock === 0
+                                  ? "Sold out"
+                                  : `${v.stock} in stock`}
+                              </span>
+                              <button onClick={() => changeStock(p, vi, 1)}>
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="admin-item-actions">
+                        <button
+                          className="admin-edit"
+                          onClick={() => openEdit(p)}
+                        >
+                          EDIT
+                        </button>
+
+                        <button
+                          className="admin-delete"
+                          onClick={() => removeProduct(p)}
+                        >
+                          DELETE
+                        </button>
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {filtered.length > visibleCount && (
+              <button
+                className="admin-btn-outline admin-more"
+                onClick={() => setVisibleCount(visibleCount + 20)}
+              >
+                SHOW MORE ({filtered.length - visibleCount})
+              </button>
+            )}
           </>
         )}
 

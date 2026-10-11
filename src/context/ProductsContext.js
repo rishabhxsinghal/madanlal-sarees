@@ -2,34 +2,22 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import localProducts from "../data/products";
+import normalizeProduct from "../utils/normalizeProduct";
 
 const ProductsContext = createContext({ products: [], loading: true });
 
 const CACHE_KEY = "productsCache";
+const localList = localProducts.map(normalizeProduct);
 
 function readCache() {
   try {
     const saved = JSON.parse(localStorage.getItem(CACHE_KEY));
-    return Array.isArray(saved) && saved.length > 0 ? saved : null;
+    return Array.isArray(saved) && saved.length > 0
+      ? saved.map(normalizeProduct)
+      : null;
   } catch {
     return null;
   }
-}
-
-// make every database record look exactly like a products.js record
-function normalize(data) {
-  const image = data.image || (data.images && data.images[0]) || "";
-
-  return {
-    ...data,
-    id: Number(data.id) || 0,
-    image,
-    images: data.images && data.images.length > 0 ? data.images : [image],
-    price: String(data.price ?? "0"),
-    originalPrice: data.originalPrice ? String(data.originalPrice) : "",
-    stock: Number(data.stock) || 0,
-    badge: data.badge || ""
-  };
 }
 
 export function ProductsProvider({ children }) {
@@ -40,11 +28,11 @@ export function ProductsProvider({ children }) {
     return onSnapshot(
       collection(db, "products"),
       (snap) => {
-        const list = snap.docs.map((d) => normalize(d.data()));
+        const list = snap.docs.map((d) => normalizeProduct(d.data()));
 
         if (list.length === 0) {
           // database empty: keep the site working with the old list
-          setProducts(localProducts);
+          setProducts(localList);
           return;
         }
 
@@ -58,7 +46,7 @@ export function ProductsProvider({ children }) {
       },
       () => {
         // offline or error: use what we have
-        setProducts((current) => current || localProducts);
+        setProducts((current) => current || localList);
       }
     );
   }, []);
