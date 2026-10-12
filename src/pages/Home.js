@@ -1,9 +1,6 @@
 import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
 import shop from "../config";
-
-import heroSaree from "../assets/images/hero-saree.jpg";
-
 import CategorySection from "../components/CategorySection";
 import NewArrivals from "../components/NewArrivals";
 import TrustSection from "../components/TrustSection";
@@ -34,10 +31,11 @@ function Home() {
 
         <section className="hero">
 
-          <img
-            src={heroSaree}
+                    <img
+            src="/images/hero.jpg"
             alt={shop.name}
             className="hero-bg"
+            decoding="async"
           />
 
           <div className="hero-overlay"></div>

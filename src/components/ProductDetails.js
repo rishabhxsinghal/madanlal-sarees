@@ -396,6 +396,10 @@ function ProductDetails() {
     () => (name ? normalizeProduct({ ...state, ...(found || {}) }) : null),
     [name, state, found]
   );
+    // related sarees keep us on /product, so scroll to the top ourselves
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [name]);
 
   if (!product) {
     return (

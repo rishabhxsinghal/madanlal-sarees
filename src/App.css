@@ -5706,3 +5706,73 @@ select {
     order: 5;
   }
 }
+/* Add to Cart buttons: same maroon as the rest of the site */
+.add-cart-btn {
+  background: #4a1f25;
+}
+
+.add-cart-btn:hover {
+  background: #6b3038;
+}
+
+.add-cart-btn:disabled,
+.add-cart-btn:disabled:hover {
+  background: #ddd;
+  color: #777;
+}
+/* =========================================
+   ROUNDED BUTTONS (same as Add to Cart)
+========================================= */
+
+:root {
+  --btn-radius: 5px;
+}
+
+/* Home, shop, product cards */
+.hero-button,
+.hero-button-outline,
+.view-all-products button,
+.add-cart-btn,
+.view-cart-btn,
+.home-visit-primary,
+.home-visit-secondary,
+.footer-whatsapp,
+
+/* Product page */
+.details-cart-btn,
+.buy-now-btn,
+.details-whatsapp-btn,
+.quantity-selector,
+
+/* Cart, wishlist, checkout */
+.checkout-btn,
+.continue-shopping-btn,
+.place-order-btn,
+.wishlist-cart-btn,
+.remove-wishlist-btn,
+.quantity-control,
+.cart-empty button,
+.wishlist-empty button,
+.checkout-empty button,
+.confirmation-box button,
+
+/* Other pages */
+.contact-cta a,
+.about-pro-buttons button,
+.collection-story-content button,
+.not-found-content button,
+.product-not-found button {
+  border-radius: var(--btn-radius);
+}
+
+/* keep the +/- buttons inside the rounded box tidy */
+.quantity-selector,
+.quantity-control {
+  overflow: hidden;
+}
+  .checkout-field input,
+  .checkout-field textarea,
+  .search-content input,
+  .shop-sort select {
+    border-radius: var(--btn-radius);
+  }

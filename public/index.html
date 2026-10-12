@@ -23,15 +23,50 @@
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
+    <!-- Shows instantly while the app loads; React replaces it -->
+    <style>
+      body {
+        margin: 0;
+        background: #f9f6f0;
+      }
+      .boot {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4a1f25;
+        font-family: Georgia, serif;
+        font-size: 22px;
+        letter-spacing: 4px;
+      }
+    </style>
+
+    <!-- Start downloading the hero photo right away (same photo, unchanged) -->
+    <link
+      rel="preload"
+      as="image"
+      href="/images/hero.jpg"
+      fetchpriority="high"
+    />
+
+    <!-- Fonts: do not block the first paint -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Playfair+Display:wght@400&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Playfair+Display:wght@400&display=swap"
+      />
+    </noscript>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root"><div class="boot">MADANLAL SAREES</div></div>
   </body>
 </html>
